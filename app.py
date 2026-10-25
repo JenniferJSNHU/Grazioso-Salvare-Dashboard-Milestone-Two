@@ -12,10 +12,6 @@ from dash.exceptions import PreventUpdate
 from CRUD_Python_Module import AnimalShelter
 from animal_service import rescue_query, validate_animal
 from staff_auth import enable_staff_auth
-from dotenv import load_dotenv
-
-# load local environment variables
-load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # connect to the imported animal shelter database
 db = AnimalShelter()
