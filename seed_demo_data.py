@@ -1,57 +1,76 @@
-"""Copy a limited set of local shelter records to the isolated Atlas demo database."""
+"""Import 10,000 shelter records from animals.json into Atlas without duplicates."""
 
+import json
+from collections import Counter
 from getpass import getpass
-from pymongo import MongoClient, ReplaceOne
-from animal_service import rescue_query
+from pathlib import Path
 
-# read the Atlas URI privately instead of storing credentials in code
-atlas_uri = getpass("Paste the Atlas connection URI (hidden): ").strip()
-if not atlas_uri.startswith(("mongodb+srv://", "mongodb://")):
-    raise SystemExit("Invalid connection string.")
+from pymongo import MongoClient, UpdateOne
 
-# connect to the local source and remote demo database
-local = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=10000)
-atlas = MongoClient(atlas_uri, serverSelectionTimeoutMS=15000)
-local.admin.command("ping")
-atlas.admin.command("ping")
+# load the 10,000 numbered shelter records from the exported JSON file
+file_path = Path(__file__).resolve().parent / "animals.json"
+if not file_path.exists():
+    raise SystemExit("animals.json must be in the same folder as this script.")
 
-# use the animals collection in both databases
-source = local["aac"]["animals"]
-target = atlas["aac"]["animals"]
-if source.count_documents({}) == 0:
-    raise SystemExit("Local aac.animals database has no records.")
+with file_path.open(encoding="utf-8") as file:
+    data = json.load(file)
 
-# collect general records and rescue candidates without duplicate IDs
-records = {}
-queries = [
-    {},
-    rescue_query("water"),
-    rescue_query("mountain"),
-    rescue_query("disaster"),
+records = [
+    {key: value for key, value in record.items() if key != "_id"}
+    for record in data
+    if isinstance(record, dict) and type(record.get("rec_num")) is int
 ]
-limits = [750, 100, 100, 100]
-for query, limit in zip(queries, limits):
-    for record in source.find(query, {"_id": 0}).limit(limit):
-        animal_id = record.get("animal_id")
-        if isinstance(animal_id, str) and animal_id.strip():
-            records[animal_id] = record
-
-if not records:
-    raise SystemExit("No usable animal_id records found.")
-
-# write records in batches and update existing IDs instead of duplicating them
-items = list(records.values())
-for offset in range(0, len(items), 200):
-    batch = items[offset : offset + 200]
-    target.bulk_write(
-        [
-            ReplaceOne({"animal_id": item["animal_id"]}, item, upsert=True)
-            for item in batch
-        ],
-        ordered=False,
+record_numbers = [record["rec_num"] for record in records]
+if len(records) != 10000 or set(record_numbers) != set(range(1, 10001)):
+    raise SystemExit(
+        "Expected exactly one record for each rec_num from 1 through 10000."
     )
-# report the final Atlas count without modifying local data
-print(f"Ready: {target.count_documents({})} records in Atlas aac.animals")
-print("The local MongoDB records were not changed.")
-local.close()
-atlas.close()
+
+# ask for the Atlas connection without saving credentials in the script
+atlas_uri = getpass("Paste your Atlas connection URI (hidden): ").strip()
+if not atlas_uri.startswith(("mongodb+srv://", "mongodb://")):
+    raise SystemExit("Invalid MongoDB connection string.")
+
+atlas = MongoClient(atlas_uri, serverSelectionTimeoutMS=15000)
+try:
+    atlas.admin.command("ping")
+    target = atlas["aac"]["animals"]
+
+    # stop if existing numbered records have ambiguous duplicate record numbers
+    existing = list(target.find({}, {"rec_num": 1}))
+    existing_numbers = [
+        item["rec_num"] for item in existing if type(item.get("rec_num")) is int
+    ]
+    duplicates = [number for number, n in Counter(existing_numbers).items() if n > 1]
+    if duplicates:
+        raise SystemExit(
+            f"Atlas already has duplicate rec_num values: {duplicates[:10]}"
+        )
+
+    # insert missing records without changing records that already exist
+    inserted = 0
+    for start in range(0, len(records), 200):
+        batch = records[start : start + 200]
+        result = target.bulk_write(
+            [
+                UpdateOne(
+                    {"rec_num": record["rec_num"]},
+                    {"$setOnInsert": record},
+                    upsert=True,
+                )
+                for record in batch
+            ],
+            ordered=False,
+        )
+        inserted += result.upserted_count
+
+    numbered_count = target.count_documents({"rec_num": {"$gte": 1, "$lte": 10000}})
+    total_count = target.count_documents({})
+    print(f"Added {inserted} shelter records.")
+    print(f"Numbered shelter records in Atlas: {numbered_count}")
+    print(f"Total documents in Atlas: {total_count}")
+    if total_count != 10000:
+        print("Extra documents (such as a test animal) remain untouched.")
+        print("We can review them separately before removing or archiving anything.")
+finally:
+    atlas.close()
