@@ -13,7 +13,7 @@ The enhanced dashboard is deployed on Render and can be accessed without install
 
 **Staff Login:**
 - Username: staff
-- Password: Provided separately for security.
+- Password: provided in submission zip README
 
 The hosted dashboard connects to MongoDB Atlas and includes the animal shelter records needed to evaluate the application.
 
