@@ -1,5 +1,5 @@
 # CS 499 Milestone Two: Software Design and Engineering 
-# Grazioso Salvare Animal Shelter Dashboard
+Grazioso Salvare Animal Shelter Dashboard
 
 ## Project Overview
 
