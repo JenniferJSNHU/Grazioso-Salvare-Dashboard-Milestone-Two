@@ -3,15 +3,14 @@ Grazioso Salvare Animal Shelter Dashboard
 
 ## Project Overview
 
-This project enhances the original CS 340 animal shelter dashboard by converting it into a standalone Dash application. Improvements include reorganized application components, staff authentication, input validation, and a more accessible interface for managing and analyzing animal shelter records.
+This project enhances the original CS 340 animal shelter dashboard by converting it into a standalone Python Dash application. Enhancements include improved application organization, staff authentication, input validation, and a redesigned user interface.
 
 ## Live Dashboard
 
-The enhanced dashboard is deployed on Render and can be accessed without installing additional software.
-The hosted dashboard connects to MongoDB Atlas and includes the animal shelter records needed to evaluate the application.
+https://grazioso-salvare-dashboard-milestone-two.onrender.com/
 
-**Dashboard URL:** https://grazioso-salvare-dashboard-milestone-two.onrender.com
+Authentication is required. Login credentials are provided in the zip README.
 
-**Staff login provided in submission zip README
+The dashboard is hosted on Render and connected to MongoDB Atlas.
 
 **Note:** The dashboard may take 1–2 minutes to load if the Render service has been inactive.
