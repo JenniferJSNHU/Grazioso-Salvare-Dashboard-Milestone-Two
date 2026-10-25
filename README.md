@@ -8,12 +8,10 @@ This project enhances the original CS 340 animal shelter dashboard by converting
 ## Live Dashboard
 
 The enhanced dashboard is deployed on Render and can be accessed without installing additional software.
+The hosted dashboard connects to MongoDB Atlas and includes the animal shelter records needed to evaluate the application.
 
 **Dashboard URL:** [To be added after deployment.](https://grazioso-salvare-dashboard-milestone-two.onrender.com/)
 
-**Staff Login:**
-- Provided in submission zip README
-
-The hosted dashboard connects to MongoDB Atlas and includes the animal shelter records needed to evaluate the application.
+**Staff login provided in submission zip README
 
 **Note:** The dashboard may take 1–2 minutes to load if the Render service has been inactive.
